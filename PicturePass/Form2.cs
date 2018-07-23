@@ -8,6 +8,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Threading;
 using System.Windows.Forms;
 
 
@@ -15,6 +16,9 @@ namespace WindowsFormsApp1
 {
     public partial class Form2 : Form
     {
+
+
+
         int fastIndex=0;
         // 保存打开图片的路径
         string imgPath = null;
@@ -30,6 +34,7 @@ namespace WindowsFormsApp1
         string text2 = "Q:左   W:左前   E:右前   R:右";
         string text3 = "Q:其它  W：人  E:立杆或路灯   R:建筑   T:树";
 
+        private string TxtFolder = "d:/影像检查文档/";
 
         bool isMove = false;
         PropertyInfo pInfo;
@@ -54,6 +59,10 @@ namespace WindowsFormsApp1
         }
         private Progress progress = Progress.Non;
 
+        private delegate void TextBoxDelegate(string text, Color color, int start);
+        private delegate void TextBoxDelegate2(string text);
+
+        
 
         public Form2(string FileName)
         {
@@ -64,7 +73,11 @@ namespace WindowsFormsApp1
             pInfo = pictureBox1.GetType().GetProperty("ImageRectangle", BindingFlags.Instance |BindingFlags.NonPublic);
             rect = (Rectangle)pInfo.GetValue(pictureBox1, null);
 
+
+
             OpenPicture(FileName);
+
+
         }
 
 
@@ -259,14 +272,26 @@ namespace WindowsFormsApp1
             directory = Path.GetDirectoryName(imgPath);
             imgArray = ImageManager.GetImgCollection(directory);
             newbitmap = (Bitmap)Image.FromFile(imgPath);
+            DrawLines(newbitmap);
             pictureBox1.Image = newbitmap;
             Text = imgPath;
             resetDes(FileName);
 
-
         }
+
+
         // 上一张图片
         private void button2_Click(object sender, EventArgs e)
+        {
+            ToLastPicture();
+        }
+        // 下一张图片
+        private void button3_Click(object sender, EventArgs e)
+        {
+            ToNextPicture();
+        }
+
+        private void ToLastPicture()
         {
             int index = GetIndex(imgPath);
             // 释放上一张图片的资源，避免保存的时候出现ExternalException异常
@@ -283,8 +308,7 @@ namespace WindowsFormsApp1
             }
         }
 
-        // 下一张图片
-        private void button3_Click(object sender, EventArgs e)
+        private void ToNextPicture()
         {
             int index = GetIndex(imgPath);
             // 释放上一张图片的资源，避免保存的时候出现ExternalException异常
@@ -301,11 +325,14 @@ namespace WindowsFormsApp1
             }
         }
 
+
         // 获得打开图片在图片集合中的索引
         private int GetIndex(string imagepath)
         {
-            if (fastIndex>=0 && imgArray[fastIndex].Equals(imagepath)) return fastIndex;
-
+            if (fastIndex >= 0 && imgArray[fastIndex].Equals(imagepath))
+            {
+                return fastIndex;
+            }
             int index = 0;
             for (int i = 0; i < imgArray.Count; i++)
             {
@@ -334,6 +361,7 @@ namespace WindowsFormsApp1
         {
             newbitmap = Image.FromFile(imgArray[index]);
             resetPictureBox();
+            DrawLines(newbitmap);
             pictureBox1.Image = newbitmap;
             currentImageWidth = newbitmap.Width;
             currentImageHeight = newbitmap.Height;
@@ -341,11 +369,50 @@ namespace WindowsFormsApp1
             Text = imgArray[index];
 
             resetDes(Text);
+        }
 
-          
+
+        private void JumpToImg()
+        {
+            int index=-1;
+            for (int i =0; i < imgArray.Count; i++)
+            {
+                if (imgArray[i].IndexOf(textBox2.Text)+textBox2.Text.Length+4== imgArray[i].Length)
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index > -1)
+            {
+                SwitchImg(index);
+            }
+            
+
+
+
+        }
+        private bool needLine = false;
+
+        private void DrawLines(Image image)
+        {
+            if (!needLine) return;
+            Graphics graphics = Graphics.FromImage(image);
+            graphics.DrawLine(new Pen(Color.Gold, 5), 1725f, 0f, 1725f, 3450f);
+            graphics.DrawLine(new Pen(Color.Gold, 5), 3240f, 0f, 3240f, 3450f);
+            graphics.DrawLine(new Pen(Color.Gold, 5), 4795f, 0f, 4795f, 3450f);
+            graphics.DrawLine(new Pen(Color.Gold, 5), 6290f, 0f, 6290f, 3450f);
 
         }
 
+        private void button1_Click(object sender, EventArgs e)
+        {
+            needLine = !needLine;
+            SwitchImg(GetIndex(imgPath));
+
+
+        }
         private void button4_Click(object sender, EventArgs e)
         {
             textBox1.Visible = !textBox1.Visible;
@@ -384,6 +451,21 @@ namespace WindowsFormsApp1
                 case Keys.T: InsertData("5"); break;
                 case Keys.G: break;
                 case Keys.N: InsertData("n"); break;
+
+                case Keys.D3:
+                    ToLastPicture();
+                    break;
+                case Keys.D4:
+                    ToNextPicture();
+                    break;
+                case Keys.Enter:
+                    JumpToImg();
+                    break;
+                case Keys.Space:
+                    ToNextPicture();
+                    break;
+                
+
 
             }
         }
@@ -551,6 +633,10 @@ namespace WindowsFormsApp1
                         data.info += "全屏自查";
                         progress = Progress.Done;
                         break;
+                    case "4":
+                        data.info += "曝光";
+                        progress = Progress.Done;
+                        break;
 
                     default:
                         break;
@@ -613,37 +699,43 @@ namespace WindowsFormsApp1
 
 
         }
-      
         private void insertExcel()
         {
 
 
-            if (IData.id.CompareTo("")==0)
+            if (IData.id.CompareTo("") == 0)
             {
-                SetTextBox( "没有id");
+                SetTextBox("没有id");
                 return;
             }
+
+            ThreadPool.QueueUserWorkItem(new WaitCallback(InsertExcelCallBack), IData);
+
+
+        }
+
+        private void InsertExcelCallBack(object value) {
+            string n;
+            Data _data = (Data)value;
 
             try
             {
 
-
-
                 SqlConnection con = new SqlConnection();
-                con.ConnectionString = "server=fwq;database=PicturePass;uid=sa;pwd=sa";
+                con.ConnectionString = "server=" + Program.Server + ";database=PicturePass;uid=sa;pwd=sa";
                 con.Open();
-                SqlCommand cmd =new SqlCommand();
+                SqlCommand cmd = new SqlCommand();
                 cmd.Connection = con;
-                if (IData.info.IndexOf("不通过")>=0)
+                if (_data.info.IndexOf("不通过") >= 0)
                 {
-                    cmd.CommandText="UPDATE [PicturePass].[dbo].[pass] set pass=0 where projectname='" + Program.ProjectName + "'And unitname='" + Program.UnitName + "'And id ='"+IData.id+"'";
-               
- }
+                    cmd.CommandText = "UPDATE [PicturePass].[dbo].[pass] set pass=0 where projectname='" + Program.ProjectName + "'And unitname='" + Program.UnitName + "'And id ='" + _data.id + "'";
+
+                }
                 else
                 {
-                    cmd.CommandText = "insert into pass(id, description,date,type,username,projectname,pass,unitname) values(@id, @des,@date,@type,@username,@projectname,@pass,@unitname)";
-                    cmd.Parameters.AddWithValue("@id", IData.id);
-                    cmd.Parameters.AddWithValue("@des", IData.info);
+                    cmd.CommandText = "insert into pass(id, description,date,type,userip,projectname,pass,unitname,username) values(@id, @des,@date,@type,@userip,@projectname,@pass,@unitname,@username)";
+                    cmd.Parameters.AddWithValue("@id", _data.id);
+                    cmd.Parameters.AddWithValue("@des", _data.info);
                     cmd.Parameters.AddWithValue("@date", DateTime.Now);
                     cmd.Parameters.AddWithValue("@type", Program.workType == Program.Mode.view ? "保密检查" : "影像检查");
                     string HostName = Dns.GetHostName(); //得到主机名
@@ -658,53 +750,68 @@ namespace WindowsFormsApp1
                             HostName += "_" + IpEntry.AddressList[i].ToString();
                         }
                     }
-                    cmd.Parameters.AddWithValue("@username", HostName);
+                    cmd.Parameters.AddWithValue("@userip", HostName);
                     cmd.Parameters.AddWithValue("@projectname", Program.ProjectName);
                     cmd.Parameters.AddWithValue("@pass", DBNull.Value);
                     cmd.Parameters.AddWithValue("@unitname", Program.UnitName);
+                    cmd.Parameters.AddWithValue("@username", Program.UserName);
                 }
 
-               
+
                 cmd.ExecuteNonQuery();
 
-                SetTextBox("数据库数据插入成功",Color.Green,0);
 
+                textBox1.Invoke(new TextBoxDelegate(SetTextBox), "数据库数据插入成功", Color.Green, 0);
+                n = "数据库数据插入成功";
             }
             catch
             {
-                SetTextBox("数据库数据插入失败", Color.Red, 0);
-
+                textBox1.Invoke(new TextBoxDelegate(SetTextBox), "数据库数据插入失败", Color.Red, 0);
+                n = "数据库数据插入失败";
             }
 
- 
+
 
 
             try
             {
-                FileStream fs = new FileStream(Program.filePath, FileMode.Append);
+                FileStream fs = new FileStream(getTxtPath(1), FileMode.Append);
                 StreamWriter sw = new StreamWriter(fs);
-                sw.WriteLine(IData.id + "#" + IData.info);
+                sw.WriteLine(_data.id + "#" + _data.info);
+                sw.Flush();
                 sw.Close();
                 fs.Close();
-                int n = textBox1.TextLength;
-                SetTextBox(textBox1.Text + "|数据插入成功", Color.Green, n);
+              
+                textBox1.Invoke(new TextBoxDelegate(SetTextBox), n + "|数据插入成功", Color.Green, n.Length );
 
             }
             catch
             {
-                int n = textBox1.TextLength;
-                SetTextBox(textBox1.Text + "|数据插入失败", Color.Red, n);
+          
+
+                textBox1.Invoke(new TextBoxDelegate(SetTextBox), n + "|数据插入失败", Color.Red, n.Length);
 
             }
 
-
         }
+
+
+
         private void readData()
         {
+
+            ThreadPool.QueueUserWorkItem(new WaitCallback(ReadDataCallBack));
+
+        }
+
+
+        private void ReadDataCallBack(object value)
+        {
+            string s;
             try
             {
                 SqlConnection con = new SqlConnection();
-                con.ConnectionString = "server=fwq;database=PicturePass;uid=sa;pwd=sa";
+                con.ConnectionString = "server=" + Program.Server + ";database=PicturePass;uid=sa;pwd=sa";
 
                 SqlCommand MyCommand = new SqlCommand("SELECT * FROM [PicturePass].[dbo].[pass] where projectname='" + Program.ProjectName + "'And unitname='" + Program.UnitName + "'", con); //定义一个数据库操作指令
                 SqlDataAdapter SelectAdapter = new SqlDataAdapter();//定义一个数据适配器
@@ -713,17 +820,20 @@ namespace WindowsFormsApp1
                 SelectAdapter.SelectCommand.ExecuteNonQuery();//执行数据库查询指令
                 con.Close();//关闭数据库
                 SelectAdapter.Fill(ReviewDataSet);//填充数据集
-                SetTextBox( "数据库数据读取成功");
 
+
+                textBox1.Invoke(new TextBoxDelegate2(SetTextBox), "数据库数据读取成功");
+                s = "数据库数据读取成功";
             }
             catch
             {
-                SetTextBox( "数据库数据读取失败");
+                textBox1.Invoke(new TextBoxDelegate2(SetTextBox), "数据库数据读取失败");
+                s = "数据库数据读取失败";
             }
 
             try
             {
-                FileStream fs = new FileStream(Program.filePath, FileMode.Open);
+                FileStream fs = new FileStream(getTxtPath(2), FileMode.Open);
                 StreamReader sr = new StreamReader(fs);
                 string line;
                 while (!sr.EndOfStream)
@@ -739,22 +849,18 @@ namespace WindowsFormsApp1
                         ReviewDatas.Add(data);
                     }
                 }
+                
                 sr.Close();
+                
                 fs.Close();
-
-
-                SetTextBox(textBox1.Text + "|数据读取成功");
-
+                textBox1.Invoke(new TextBoxDelegate2(SetTextBox), s + "|数据读取成功");
             }
             catch
             {
-                SetTextBox(textBox1.Text + "|数据读取失败");
+                textBox1.Invoke(new TextBoxDelegate2(SetTextBox), s + "|数据读取失败");
             }
-
-
-
-
         }
+
 
         private string LoadData(string id)
         {
@@ -809,7 +915,7 @@ namespace WindowsFormsApp1
             }
             else if (Program.workType == Program.Mode.quickCheck)
             {
-                SetTextBox( "  Q:左   W:右   E:全屏自查");
+                SetTextBox( "  Q:左   W:右   E:全屏自查   R:曝光");
             }
 
        
@@ -842,6 +948,35 @@ namespace WindowsFormsApp1
             textBox1.SelectionAlignment = HorizontalAlignment.Center;
             textBox1.Select(0, 0);
         }
+
+
+        //type 1: 插入数据 2：读取数据
+        private string getTxtPath(int type)
+        {
+
+            if (type==2)
+            {
+                if (Program.filePath!=null&&Program.filePath.Equals(""))
+                {
+                    return Program.filePath;
+                }
+                else
+                {
+                    return TxtFolder + Program.UnitName + ".txt";
+                }
+            }
+
+
+            if (!Directory.Exists(TxtFolder)) Directory.CreateDirectory(TxtFolder);
+            if (!File.Exists(TxtFolder + Program.UnitName + ".txt"))
+            {
+               FileStream fs =   File.Create(TxtFolder + Program.UnitName + ".txt");
+                fs.Close();
+            }
+
+            return TxtFolder + Program.UnitName + ".txt";
+        }
+
 
     }
 }

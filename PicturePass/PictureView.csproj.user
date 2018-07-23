@@ -2,7 +2,7 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <PublishUrlHistory>D:\PictureCheck\|C:\Users\Administrator\Desktop\PictureCheck\|C:\Users\Administrator\Desktop\</PublishUrlHistory>
-    <InstallUrlHistory>http://localhost/图片检查/</InstallUrlHistory>
+    <InstallUrlHistory>http://localhost/picturepass/|http://localhost/图片检查/</InstallUrlHistory>
     <SupportUrlHistory />
     <UpdateUrlHistory />
     <BootstrapperUrlHistory />
