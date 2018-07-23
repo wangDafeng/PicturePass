@@ -1,0 +1,15 @@
+E:\PicturePass\WindowsFormsApp1\obj\Debug\PicturePass.Form1.resources
+E:\PicturePass\WindowsFormsApp1\obj\Debug\PicturePass.Form2.resources
+E:\PicturePass\WindowsFormsApp1\obj\Debug\PictureView.Properties.Resources.resources
+E:\PicturePass\WindowsFormsApp1\obj\Debug\PictureView.csproj.GenerateResource.cache
+E:\PicturePass\WindowsFormsApp1\obj\Debug\PictureView.csproj.CoreCompileInputs.cache
+E:\PicturePass\WindowsFormsApp1\obj\Debug\PictureView.TrustInfo.xml
+E:\PicturePass\WindowsFormsApp1\obj\Debug\PictureView.exe.manifest
+E:\PicturePass\WindowsFormsApp1\obj\Debug\PictureView.exe
+E:\PicturePass\WindowsFormsApp1\obj\Debug\PictureView.pdb
+E:\PicturePass\WindowsFormsApp1\bin\Debug\PictureView.exe.config
+E:\PicturePass\WindowsFormsApp1\bin\Debug\PictureView.exe.manifest
+E:\PicturePass\WindowsFormsApp1\bin\Debug\PictureView.application
+E:\PicturePass\WindowsFormsApp1\bin\Debug\PictureView.exe
+E:\PicturePass\WindowsFormsApp1\bin\Debug\PictureView.pdb
+E:\PicturePass\WindowsFormsApp1\obj\Debug\PictureView.application

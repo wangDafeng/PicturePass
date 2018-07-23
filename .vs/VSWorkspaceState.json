@@ -1,7 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\PicturePass"
   ],
-  "SelectedNode": "\\PicturePass",
+  "SelectedNode": "\\PicturePass\\Form2.Designer.cs",
   "PreviewInSolutionExplorer": false
 }

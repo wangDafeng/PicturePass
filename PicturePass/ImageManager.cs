@@ -6,7 +6,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 
-namespace WindowsFormsApp1
+namespace PicturePass
 {
     public class ImageManager
     {
